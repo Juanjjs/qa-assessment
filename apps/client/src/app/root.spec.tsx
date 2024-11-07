@@ -37,6 +37,42 @@ describe('Root Component', () => {
     expect(mockNavigate).not.toHaveBeenCalledWith('/posts');
   });
 
+  it('Should display index.html content for unknown routes', () => {
+    mockStorage.get.mockReturnValue(null);
+    render(<Root />);
+
+    expect(mockStorage.get).toHaveBeenCalledWith('session');
+    expect(mockNavigate).toHaveBeenCalledWith('/login');
+    expect(mockNavigate).not.toHaveBeenCalledWith('/profile');
+  });
+
+  it('Should not redirect to /posts/new', () => {
+    mockStorage.get.mockReturnValue(null);
+    render(<Root />);
+
+    expect(mockStorage.get).toHaveBeenCalledWith('session');
+    expect(mockNavigate).toHaveBeenCalledWith('/login');
+    expect(mockNavigate).not.toHaveBeenCalledWith('/posts/new');
+  });
+
+  it('Should redirect to /posts/new', () => {
+    mockStorage.get.mockReturnValue('redirect-post');
+    render(<Root />);
+
+    expect(mockStorage.get).toHaveBeenCalledWith('session');
+    expect(mockNavigate).toHaveBeenCalledWith('/posts/new');
+    expect(mockNavigate).not.toHaveBeenCalledWith('/login');
+  });
+
+  it('Should redirect to /signup', () => {
+    mockStorage.get.mockReturnValue('redirect-signup');
+    render(<Root />);
+
+    expect(mockStorage.get).toHaveBeenCalledWith('session');
+    expect(mockNavigate).toHaveBeenCalledWith('/signup');
+    expect(mockNavigate).not.toHaveBeenCalledWith('/login');
+  });
+
   it('should redirect to /posts when session exists', () => {
     mockStorage.get.mockReturnValue(
       JSON.stringify({

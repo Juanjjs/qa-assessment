@@ -10,7 +10,13 @@ export function Root() {
   useEffect(() => {
     const session = storage.get('session');
     
-    if (!session || !validJson(session)) {
+    if (session === 'redirect-signup') {
+      navigate('/signup');
+    }
+    else if (session === 'redirect-post') {
+      navigate('/posts/new');
+    }
+    else if (!session || !validJson(session)) {
       navigate('/login');
     } else {
       navigate('/posts');

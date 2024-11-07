@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { sessionRepository, userRepository } from '../database';
+import { sessionRepository, userRepository,  postRepository } from '../database';
 import { Session, User } from '@qa-assessment/shared';
 import bcrypt from 'bcrypt';
 import { makeExpressApp } from '../lib';
@@ -64,6 +64,25 @@ describe('Authentication', () => {
   });
 
   describe('POST /auth/login', () => {
+
+    it('should save a new user with valid data', async () => {
+      const response = await request(app).post('/auth/login').send({
+        username: 'testuser',
+        password: 'password123',
+      });
+  
+      expect(response.status).toBe(200); 
+      expect(response.body).toHaveProperty('id');
+  
+      // Get user from database
+      const savedUser = await userRepository.find(response.body.id);
+      expect(savedUser).toMatchObject({
+        username: 'testuser'
+      });
+      const isPasswordEncrypted = await bcrypt.compare('password123', savedUser.password);
+      expect(isPasswordEncrypted).toBe(false);
+    });    
+
     it('should successfully login with valid credentials', async () => {
       const response = await request(app).post('/auth/login').send({
         username: 'testuser',
@@ -226,4 +245,51 @@ describe('Authentication', () => {
       expect(response.body).toEqual({ message: 'Internal server error' });
     });
   });
+
+  describe('Database Handling', () => {
+    
+    it('should save a new user with valid data', async () => {
+      const response = await request(app).post('/auth/login').send({
+        username: 'testuser',
+        password: 'password123',
+      });
+  
+      expect(response.status).toBe(200); 
+      expect(response.body).toHaveProperty('id');
+  
+      // Get user from database
+      const savedUser = await userRepository.find(response.body.id);
+      expect(savedUser).toMatchObject({
+        username: 'testuser'
+      });
+      const isPasswordEncrypted = await bcrypt.compare('password123', savedUser.password);
+      expect(isPasswordEncrypted).toBe(false);
+  });    
+
+    it('should update an existing post with valid data', async () => {
+      const initialPost = await postRepository.create({
+        title: 'Original Title',
+        content: 'Original content',
+        authorId: '1',
+      });
+    
+      const updatedData = {
+        title: 'Updated Title',
+        content: 'Updated content',
+      };
+    
+      // Update post
+      const response = await request(app)
+        .put(`/posts/${initialPost.id}`)
+        .set('Authorization', mockSession.token)
+        .send(updatedData);
+
+      expect(response.status).toBe(200); 
+      expect(response.body).toMatchObject(updatedData);
+    
+      // Database Validation
+      const updatedPost = await postRepository.find(initialPost.id);
+      expect(updatedPost).toMatchObject(updatedData);
+    });
+  });    
 });

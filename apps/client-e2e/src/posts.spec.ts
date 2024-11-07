@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import exp = require('constants');
 
 test.use({
   screenshot: 'only-on-failure',
@@ -12,6 +13,54 @@ const testUser = {
   username: 'testuser',
   password: 'testpassword',
 };
+
+test.describe('Before Login', () => {
+  
+  test('login failed with correct password', async ({ page }) => {
+    const invalidCredentials = page.getByText(
+      'Invalid credentials',
+    );
+    try {
+      await page.goto('/login');
+      await page.getByPlaceholder('Username').fill(testUser.username+"juan");
+      await page.getByPlaceholder('Password').fill(testUser.password);
+      await page.getByRole('button', { name: 'Sign in' }).click();
+      await expect(page).toHaveURL('/login');
+
+      await expect(invalidCredentials).toBeVisible();
+      await expect(invalidCredentials).toContainText('Invalid credentials');
+
+    } catch (error) {
+      await page.screenshot({
+        path: `./test-results/layout-elements-failure-${Date.now()}.png`,
+        fullPage: true,
+      });
+      throw error;
+    }
+  });
+
+  test('login failed with short password', async ({ page }) => {
+    const shortMessage = page.getByText('String must contain at least');
+    try {
+      await page.goto('/login');
+      await page.getByPlaceholder('Username').fill(testUser.username+"juan");
+      await page.getByPlaceholder('Password').fill('123');
+      await page.getByRole('button', { name: 'Sign in' }).click();
+      await expect(page).toHaveURL('/login');
+
+      await expect(shortMessage).toBeVisible();
+      await expect(shortMessage).toContainText('String must contain at least 8 character(s)');
+
+    } catch (error) {
+      await page.screenshot({
+        path: `./test-results/layout-elements-failure-${Date.now()}.png`,
+        fullPage: true,
+      });
+      throw error;
+    }
+  });
+
+});
 
 test.describe('Posts Home Screen', () => {
   // Initialize session token for API calls
@@ -163,6 +212,48 @@ test.describe('Posts Home Screen', () => {
       // Test logout
       await page.getByRole('button', { name: 'Logout' }).click();
       await expect(page).toHaveURL('/login');
+    } catch (error) {
+      await page.screenshot({
+        path: `./test-results/navigation-failure-${Date.now()}.png`,
+        fullPage: true,
+      });
+      throw error;
+    }
+  });
+
+  test('correct layout and elements for profile', async ({ page }) => {
+    try {
+      // Test profile navigation
+      await page.getByRole('link', { name: 'Profile' }).click();
+      await expect(page).toHaveURL('/profile');
+
+      const userText = page.getByText(
+        'testuser',
+      );
+      const userID = page.getByText(
+        'User ID',
+      );
+      const accountStatus = page.getByText(
+        'Account Status',
+      );
+      const favoriteBook = page.getByText(
+        'Favorite Book',
+      ).first()
+
+      await expect(userText).toBeVisible();
+      await expect(userText).toContainText('testuser');
+
+      await expect(accountStatus).toBeVisible();
+      await expect(accountStatus).toContainText('Account Status');
+
+      await expect(userID).toBeVisible();
+      await expect(userID).toContainText('User ID');
+
+      await expect(favoriteBook).toBeVisible();
+      await expect(favoriteBook).toContainText('Favorite Book');
+      
+      await expect(page.locator('button').nth(1)).toBeVisible();
+
     } catch (error) {
       await page.screenshot({
         path: `./test-results/navigation-failure-${Date.now()}.png`,

@@ -140,7 +140,6 @@ describe('Posts API', () => {
         });
         fail('Should have thrown an error');
       } catch (error: any) {
-        // Using 422 for invalid update attempt on non-existent resource
         expect(error.response.status).toBe(404);
       }
     });

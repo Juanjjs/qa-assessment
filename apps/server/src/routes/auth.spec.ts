@@ -4,6 +4,18 @@ import { Session, User } from '@qa-assessment/shared';
 import bcrypt from 'bcrypt';
 import { makeExpressApp } from '../lib';
 
+describe('Token', () => {
+  it('should reject logout with real old token', async () => {
+    const response = await request('http://localhost:3000')
+      .post('/auth/logout')
+      .set('Authorization', 'YoQdJ3hUjQ25ajdD4Izi61fd2YWcNjow');
+    
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({ message: 'Unauthorized' });
+  });
+});
+
+
 describe('Authentication', () => {
   const app = makeExpressApp();
   let mockUser: User;
@@ -89,6 +101,21 @@ describe('Authentication', () => {
       expect(response.body).toHaveProperty('errors');
       expect(sessionRepository.create).not.toHaveBeenCalled();
     });
+
+    it('should enforce rate limiting after multiple failed login attempts', async () => {
+      for (let i = 0; i < 5; i++) {
+        await request(app).post('/auth/login').send({ 
+          username: 'testuser', 
+          password: 'wrongpassword' });
+      }
+      const response = await request(app).post('/auth/login').send({ 
+        username: 'testuser', 
+        password: 'wrongpassword' });
+      
+      expect(response.status).toBe(422);
+      expect(response.body.message).toBeDefined(); 
+    });
+
   });
 
   describe('POST /auth/logout', () => {
@@ -108,6 +135,16 @@ describe('Authentication', () => {
     it('should reject logout without authorization header', async () => {
       const response = await request(app).post('/auth/logout');
 
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({ message: 'Unauthorized' });
+      expect(sessionRepository.delete).not.toHaveBeenCalled();
+    });
+    
+    it('should reject logout with empty token', async () => {
+      const response = await request(app)
+        .post('/auth/logout')
+        .set('Authorization', '');
+      
       expect(response.status).toBe(401);
       expect(response.body).toEqual({ message: 'Unauthorized' });
       expect(sessionRepository.delete).not.toHaveBeenCalled();

@@ -1,9 +1,12 @@
 import axios from 'axios';
 import { Post, Session } from '@qa-assessment/shared';
+import { expect, test } from '@playwright/test';
+import exp = require('constants');
 
 describe('Posts API', () => {
   let authToken: string;
   let userId: string;
+  let postId: string;
 
   beforeAll(async () => {
     // Register a test user
@@ -93,6 +96,53 @@ describe('Posts API', () => {
 
       // Restore auth token for subsequent tests
       axios.defaults.headers.common['Authorization'] = authToken;
+    });
+
+    it('should delete a post successfully', async () => {
+      const deleteResponse = await axios.delete(`/posts/${postId}`);
+      expect(deleteResponse.status).toBe(200);
+
+      try {
+        await axios.get(`/posts/${postId}`);
+        fail('Should have thrown an error');
+      } catch (error: any) {
+        expect(error.response.status).toBe(404);
+      }
+    });
+
+    it('should allow updates post', async () => {
+      // Create a post
+      const postData = {
+        title: 'Initial Title',
+        content: 'Initial content',
+      };
+      const createResponse = await axios.post<Post>('/posts', postData);
+      expect(createResponse.status).toBe(201);
+
+      const createdPost = createResponse.data;
+      postId = createdPost.id;
+
+      // Update the post
+      const updatedData = {
+        title: 'New Title by Juan',
+        content: 'New content by Juan',
+      };
+      const updateResponse = await axios.put<Post>(`/posts/${postId}`, updatedData);
+      expect(updateResponse.status).toBe(200);
+      expect(updateResponse.data).toMatchObject(updatedData);
+    });
+
+    it('should reject update on non-existent post', async () => {
+      try {
+        await axios.put('/posts/nonexistent', {
+          title: 'Should fail',
+          content: 'This should not work',
+        });
+        fail('Should have thrown an error');
+      } catch (error: any) {
+        // Using 422 for invalid update attempt on non-existent resource
+        expect(error.response.status).toBe(404);
+      }
     });
   });
 });

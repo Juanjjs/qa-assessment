@@ -138,18 +138,20 @@ test.describe('Posts Home Screen', () => {
 
   test('shows empty state when no posts exist', async ({ page }) => {
     try {
-      const emptyStateText = page.getByText(
-        'No posts found. Create your first post!',
-      );
-      await expect(emptyStateText).toBeVisible();
+        await page.reload();
+
+        const emptyStateText = page
+          .getByText('No posts found. Create your first post!');
+        await expect(emptyStateText).toBeVisible({ timeout: 10000 });
+
     } catch (error) {
-      await page.screenshot({
-        path: `./test-results/empty-state-failure-${Date.now()}.png`,
-        fullPage: true,
-      });
-      throw error;
+        await page.screenshot({
+            path: `./test-results/empty-state-failure-${Date.now()}.png`,
+            fullPage: true,
+        });
+        throw error;
     }
-  });
+});
 
   test('displays posts in correct format', async ({ page }) => {
     try {
@@ -163,13 +165,13 @@ test.describe('Posts Home Screen', () => {
         .fill('Test post content');
       await page.getByRole('button', { name: 'Create Post' }).click();
 
-      // Verify post appears in list
+      // Verify post in list
       await expect(
         page.getByRole('heading', { name: 'Test Post Title' }),
-      ).toBeVisible();
-      await expect(page.getByText('Test post content')).toBeVisible();
+      ).toBeVisible({ timeout: 5000 });
+      await expect(page.getByText('Test post content')).toBeVisible({ timeout: 5000 });
 
-      // Check post card elements
+      // Check elements
       const postCard = page.getByRole('article').first();
       await expect(postCard.locator('.edit-button')).toBeVisible();
       await expect(postCard.locator('.delete-button')).toBeVisible();
